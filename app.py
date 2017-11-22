@@ -1,7 +1,7 @@
 # encoding: utf-8
-import json
+from models import User
 from flask import Flask, request, jsonify
-from flask_mongoengine import MongoEngine
+from extensions import db
 
 app = Flask(__name__)
 app.config['MONGODB_SETTINGS'] = {
@@ -9,22 +9,21 @@ app.config['MONGODB_SETTINGS'] = {
     'host': 'localhost',
     'port': 27017
 }
-db=MongoEngine(app)
-#db.init_app(app)
 
+db.init_app(app)
 
-class User(db.Document):
-    username=db.StringField()
 
 @app.route('/', methods=['GET'])
 def hello():
     return "hello world"
 
 
-@app.route('/add', methods=['GET'])
-def query_records():
-    name = request.args.get('name')
-    user = User(username=name)
+@app.route('/create', methods=['POST'])
+def create_user():
+    name = request.form['name']
+    psword=request.form['password']
+    print(name,psword)
+    user = User(username=name,password=psword)
     user.save()
     if not user:
         return jsonify({'error': 'data not found'})
@@ -32,16 +31,25 @@ def query_records():
         return jsonify(user.to_json())
 
 
-@app.route('/findd', methods=['GET'])
+@app.route('/find', methods=['GET'])
 def find():
     name = request.args.get('name')
     user = User.objects(username=name)
-    print(user)
     if not user:
         return jsonify({'error': 'data not found'})
     else:
         return jsonify(user.to_json())
 
+
+@app.route('/login', methods=['POST'])
+def login():
+    name=request.form['name']
+    psword=request.form['password']
+    user=User.objects(username=name,password=psword)
+    if not user:
+        return jsonify({'error':'password wrong'})
+    else:
+        return jsonify({'success':'login'})
 
 if __name__ == "__main__":
     app.run(debug=True)
